@@ -1,0 +1,13 @@
+{
+  "name": "syncspace",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace @syncspace/backend",
+    "dev:frontend": "npm run dev --workspace @syncspace/frontend"
+  }
+}
