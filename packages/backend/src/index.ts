@@ -3,9 +3,12 @@ import { createServer } from "http"
 import { Server } from "socket.io"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import authRoutes from "./routes/auth.routes"
+import { errorHandler } from "./middleware/errorHandler"
+
 import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
+    ClientToServerEvents,
+    ServerToClientEvents,
 } from "@syncspace/shared"
 
 const PORT = process.env.PORT || 4000
@@ -16,33 +19,37 @@ const httpServer = createServer(app)
 
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: {
-    origin: FRONTEND_URL,
-    credentials: true,
-  },
+    cors: {
+        origin: FRONTEND_URL,
+        credentials: true,
+    },
 })
 
 app.use(express.json())
 app.use(cookieParser())
 app.use(
-  cors({
-    origin: FRONTEND_URL,
-    credentials: true,
-  })
+    cors({
+        origin: FRONTEND_URL,
+        credentials: true,
+    })
 )
 
+app.use("/api/v1/auth", authRoutes)
+
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" })
+    res.json({ status: "ok" })
 })
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id)
+    console.log("Socket connected:", socket.id)
 
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id)
-  })
+    socket.on("disconnect", () => {
+        console.log("Socket disconnected:", socket.id)
+    })
 })
 
+app.use(errorHandler)
+
 httpServer.listen(PORT, () => {
-  console.log(`Backend listening on http://localhost:${PORT}`)
+    console.log(`Backend listening on http://localhost:${PORT}`)
 })
