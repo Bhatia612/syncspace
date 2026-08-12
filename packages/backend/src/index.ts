@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser"
 import authRoutes from "./routes/auth.routes"
 import { errorHandler } from "./middleware/errorHandler"
 import boardRouter from "./routes/board.routes"
+import listRouter from "./routes/list.routes"
 
 import type {
     ClientToServerEvents,
@@ -38,6 +39,8 @@ app.use(
 app.use("/api/v1/auth", authRoutes)
 
 app.use("/api/v1/boards", boardRouter)
+
+app.use("/api/v1/lists", listRouter)
 
 app.get("/health", (_req, res) => {
     res.json({ status: "ok" })
