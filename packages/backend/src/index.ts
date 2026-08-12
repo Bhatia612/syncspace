@@ -12,7 +12,11 @@ import cardRouter from "./routes/card.routes"
 import type {
     ClientToServerEvents,
     ServerToClientEvents,
+    SocketData,
 } from "@syncspace/shared"
+
+import { socketAuth } from "./socket/socket.auth"
+
 
 const PORT = process.env.PORT || 4000
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173"
@@ -21,7 +25,7 @@ const app = express()
 const httpServer = createServer(app)
 
 
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(httpServer, {
     cors: {
         origin: FRONTEND_URL,
         credentials: true,
@@ -50,12 +54,14 @@ app.get("/health", (_req, res) => {
 })
 
 io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id)
+  console.log("Socket connected:", socket.id, "user:", socket.data.userId)
 
-    socket.on("disconnect", () => {
-        console.log("Socket disconnected:", socket.id)
-    })
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id)
+  })
 })
+
+io.use(socketAuth)
 
 app.use(errorHandler)
 

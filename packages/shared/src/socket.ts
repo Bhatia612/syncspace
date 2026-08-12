@@ -51,3 +51,12 @@ export interface ServerToClientEvents {
   "presence:update": (users: PresenceUser[]) => void
   "card:editing": (evt: CardEditingEvent) => void
 }
+
+
+
+
+
+
+export interface SocketData {
+  userId: string
+}
