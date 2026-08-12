@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes"
 import { errorHandler } from "./middleware/errorHandler"
 import boardRouter from "./routes/board.routes"
 import listRouter from "./routes/list.routes"
+import cardRouter from "./routes/card.routes"
 
 import type {
     ClientToServerEvents,
@@ -41,6 +42,8 @@ app.use("/api/v1/auth", authRoutes)
 app.use("/api/v1/boards", boardRouter)
 
 app.use("/api/v1/lists", listRouter)
+
+app.use("/api/v1/cards", cardRouter)
 
 app.get("/health", (_req, res) => {
     res.json({ status: "ok" })

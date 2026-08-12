@@ -17,3 +17,21 @@ export const createCard = async (
     next(err)
   }
 }
+
+export const moveCard = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const card = await cardService.moveCard({
+      cardId: req.params.id,
+      toListId: req.body.toListId,
+      position: req.body.position,
+      userId: req.userId!,
+    })
+    res.json({ card })
+  } catch (err) {
+    next(err)
+  }
+}
