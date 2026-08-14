@@ -107,7 +107,7 @@ describe("moveCard", () => {
             userId: "u1",
         })
 
-        expect(result).toMatchObject({ id: "c1", listId: "l2", position: "a0" })
+        expect(result).toMatchObject({ id: "c1", listId: "l2", position: "a0", boardId: "b1" })
         expect(mockCard.update).toHaveBeenCalledOnce()
     })
 })

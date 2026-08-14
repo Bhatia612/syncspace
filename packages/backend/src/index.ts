@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/errorHandler"
 import boardRouter from "./routes/board.routes"
 import listRouter from "./routes/list.routes"
 import cardRouter from "./routes/card.routes"
+import { registerBoardHandlers } from "./socket/board.handlers"
 
 import type {
     ClientToServerEvents,
@@ -54,11 +55,13 @@ app.get("/health", (_req, res) => {
 })
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id, "user:", socket.data.userId)
+    console.log("Socket connected:", socket.id, "user:", socket.data.userId)
 
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id)
-  })
+    registerBoardHandlers(io, socket)
+
+    socket.on("disconnect", () => {
+        console.log("Socket disconnected:", socket.id)
+    })
 })
 
 io.use(socketAuth)

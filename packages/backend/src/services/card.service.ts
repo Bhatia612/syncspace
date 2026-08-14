@@ -84,5 +84,5 @@ export const moveCard = async ({ cardId, toListId, position, userId }: MoveCardI
     select: { id: true, listId: true, title: true, position: true },
   })
 
-  return updated
+  return { ...updated, boardId: card.list.boardId }
 }
