@@ -56,12 +56,7 @@ app.get("/health", (_req, res) => {
 
 io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id, "user:", socket.data.userId)
-
     registerBoardHandlers(io, socket)
-
-    socket.on("disconnect", () => {
-        console.log("Socket disconnected:", socket.id)
-    })
 })
 
 io.use(socketAuth)
