@@ -1,23 +1,35 @@
+import { Routes, Route, Navigate } from "react-router-dom"
+import { useAuth } from "./features/auth/AuthContext"
+import AuthPage from "./features/auth/AuthPage"
+
 function App() {
-  return (
-    <div className="min-h-screen bg-canvas p-10">
-      <h1 className="display text-5xl text-text">SyncSpace</h1>
-      <p className="mt-2 text-text-muted">Real-time collaborative boards.</p>
+  const { user, isLoading } = useAuth()
 
-      <div className="mt-8 flex gap-4">
-        <div className="rounded-lg border border-border bg-surface-1 p-5">
-          <p className="text-text">Surface 1 card</p>
-        </div>
-        <div className="presence-glow rounded-lg border border-border bg-surface-2 p-5">
-          <p className="text-text">Someone's editing</p>
-          <p className="mt-1 text-sm text-accent">◍ Aria is here</p>
-        </div>
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas">
+        <p className="text-text-muted">Loading...</p>
       </div>
+    )
+  }
 
-      <button className="mt-6 rounded-lg bg-accent px-4 py-2 font-medium text-on-accent">
-        New board
-      </button>
-    </div>
+  return (
+    <Routes>
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route
+        path="/"
+        element={
+          user ? (
+            <div className="p-10">
+              <h1 className="display text-4xl text-text">Welcome, {user.name}</h1>
+              <p className="mt-2 text-text-muted">Boards coming soon.</p>
+            </div>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
   )
 }
 
