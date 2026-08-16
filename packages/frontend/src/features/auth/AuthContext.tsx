@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { getMe, type User } from "./authApi"
+import { connectSocket, disconnectSocket } from "../../socket/socket"
 
 interface AuthContextValue {
   user: User | null
@@ -12,6 +13,15 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Connect the socket when logged in, disconnect when logged out.
+  useEffect(() => {
+    if (user) {
+      connectSocket()
+    } else {
+      disconnectSocket()
+    }
+  }, [user])
 
   useEffect(() => {
     getMe()
