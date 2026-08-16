@@ -82,3 +82,28 @@ export const getBoardSnapshot = async (
         })),
     }
 }
+
+export const getUserBoards = async (userId: string) => {
+    const memberships = await prisma.boardMember.findMany({
+        where: { userId },
+        include: {
+            board: {
+                select: {
+                    id: true,
+                    title: true,
+                    createdAt: true,
+                    _count: { select: { members: true } },
+                },
+            },
+        },
+        orderBy: { board: { createdAt: "desc" } },
+    })
+
+    return memberships.map((m) => ({
+        id: m.board.id,
+        title: m.board.title,
+        role: m.role,
+        memberCount: m.board._count.members,
+        createdAt: m.board.createdAt,
+    }))
+}

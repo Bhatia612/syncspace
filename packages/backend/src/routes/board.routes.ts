@@ -8,5 +8,6 @@ const boardRouter = Router()
 boardRouter.post("/", requireAuth, boardController.createBoard)
 boardRouter.get("/:id", requireAuth, boardController.getBoard)
 boardRouter.post("/:id/lists", requireAuth, listController.createList)
+boardRouter.get("/", requireAuth, boardController.getBoards)
 
 export default boardRouter

@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { useAuth } from "./features/auth/AuthContext"
 import AuthPage from "./features/auth/AuthPage"
+import BoardsPage from "./features/boards/BoardsPage"
+import BoardPage from "./features/boards/BoardPage"
 
 function App() {
   const { user, isLoading } = useAuth()
@@ -16,18 +18,11 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/" element={user ? <BoardsPage /> : <Navigate to="/login" replace />} />
+
       <Route
-        path="/"
-        element={
-          user ? (
-            <div className="p-10">
-              <h1 className="display text-4xl text-text">Welcome, {user.name}</h1>
-              <p className="mt-2 text-text-muted">Boards coming soon.</p>
-            </div>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        path="/board/:boardId"
+        element={user ? <BoardPage /> : <Navigate to="/login" replace />}
       />
     </Routes>
   )

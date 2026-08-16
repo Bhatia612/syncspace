@@ -25,3 +25,12 @@ export const getBoard = async (
     next(err)
   }
 }
+
+export const getBoards = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const boards = await boardService.getUserBoards(req.userId!)
+    res.json({ boards })
+  } catch (err) {
+    next(err)
+  }
+}
