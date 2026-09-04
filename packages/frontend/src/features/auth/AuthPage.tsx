@@ -38,6 +38,23 @@ function AuthPage() {
     }
   }
 
+  const quickLogin = async (devEmail: string, devPassword: string) => {
+    setError(null)
+    setSubmitting(true)
+    try {
+      await login({ email: devEmail, password: devPassword })
+      const { user } = await getMe()
+      setUser(user)
+      navigate("/")
+    } catch (err) {
+      const message =
+        err instanceof ApiRequestError ? err.message : "Dev login failed. Does this user exist?"
+      setError(message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !submitting) handleSubmit()
   }
@@ -117,6 +134,28 @@ function AuthPage() {
             </motion.button>
           </div>
 
+          {import.meta.env.DEV && mode === "login" && (
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="mb-2 text-xs text-text-faint">Dev shortcuts</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => quickLogin("diyarayat5@gmail.com", "diya09876")}
+                  disabled={submitting}
+                  className="rounded-lg border border-border bg-surface-1 px-3 py-2 text-left text-sm text-text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+                >
+                  Log in as DIYA
+                </button>
+                <button
+                  onClick={() => quickLogin("mohitbhatia612@gmail.com", "mohit09876")}
+                  disabled={submitting}
+                  className="rounded-lg border border-border bg-surface-1 px-3 py-2 text-left text-sm text-text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-50"
+                >
+                  Log in as MOHIT
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="mt-6 text-sm text-text-muted">
             {mode === "login" ? "Don't have an account? " : "Already have an account? "}
             <button
@@ -133,16 +172,15 @@ function AuthPage() {
       </div>
 
       <div className="relative hidden flex-col justify-center overflow-hidden border-l border-border bg-surface-1 px-16 md:flex md:w-[55%] lg:w-[60%]">
-        {/* ambient glow */}
         <div
           className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full opacity-15 blur-[100px]"
           style={{ background: "oklch(0.80 0.13 192)" }}
         />
         <div className="relative max-w-lg">
           <p className="display text-5xl leading-[1.1] text-text lg:text-6xl">
-            Know what’s moving. 
+            Know what's moving.
             <br />
-            <span className="text-accent">And what’s next.</span>
+            <span className="text-accent">And what's next.</span>
           </p>
           <p className="mt-6 max-w-md text-lg leading-relaxed text-text-muted">
             Keep tasks organized, priorities clear, and your whole team moving forward.

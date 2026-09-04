@@ -14,6 +14,7 @@ import {
   renameBoard,
   deleteBoard,
 } from "./boardApi"
+import Loader, { InlineLoader } from "../../shared/components/Loader"
 
 function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
@@ -40,11 +41,7 @@ function BoardPage() {
   })
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas">
-        <p className="text-text-muted">Loading board...</p>
-      </div>
-    )
+    return <Loader label="Loading board" />
   }
 
   if (isError || !data) {
@@ -111,7 +108,6 @@ function BoardPage() {
   )
 }
 
-// Double-click to rename, Enter to save, Escape to cancel.
 function EditableTitle({
   value,
   onSave,
@@ -300,9 +296,9 @@ function AddCard({ listId, boardId }: { listId: string; boardId: string }) {
         <button
           onClick={submit}
           disabled={mutation.isPending || !title.trim()}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-on-accent disabled:opacity-50"
+          className="flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-on-accent disabled:opacity-50"
         >
-          {mutation.isPending ? "Adding..." : "Add"}
+          {mutation.isPending ? <InlineLoader /> : "Add"}
         </button>
         <button
           onClick={() => {
@@ -368,9 +364,9 @@ function AddList({ boardId }: { boardId: string }) {
         <button
           onClick={submit}
           disabled={mutation.isPending || !title.trim()}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-on-accent disabled:opacity-50"
+          className="flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-on-accent disabled:opacity-50"
         >
-          {mutation.isPending ? "Adding..." : "Add list"}
+          {mutation.isPending ? <InlineLoader /> : "Add list"}
         </button>
         <button
           onClick={() => {

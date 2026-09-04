@@ -2,11 +2,9 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion } from "framer-motion"
-import { useAuth } from "../auth/AuthContext"
 import { getBoards, createBoard, type BoardSummary } from "./boardsApi"
 
 function BoardsPage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
 
   const { data, isLoading } = useQuery({
@@ -17,14 +15,7 @@ function BoardsPage() {
   const boards = data?.boards ?? []
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-border px-8 py-5">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <span className="display text-2xl text-text">SyncSpace</span>
-          <span className="text-sm text-text-muted">{user?.name}</span>
-        </div>
-      </header>
-
+    <div>
       <main className="mx-auto max-w-5xl px-8 py-10">
         <h1 className="display text-3xl text-text">Your boards</h1>
         <p className="mt-1 text-text-muted">Open a board or start a new one.</p>
