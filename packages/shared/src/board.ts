@@ -3,6 +3,7 @@ export interface Card {
   listId: string
   title: string
   position: string
+  createdBy: { id: string; name: string } | null
 }
 
 export interface List {

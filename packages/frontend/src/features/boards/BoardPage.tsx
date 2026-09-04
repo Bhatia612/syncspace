@@ -435,18 +435,24 @@ function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
+      className="rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
     >
-      <EditableTitle
-        value={card.title}
-        onSave={(t) => renameCardMut.mutate(t)}
-        editing={editing}
-        setEditing={setEditing}
-        className="text-text"
-      />
-      <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
-        <ItemMenu onRename={() => setEditing(true)} onDelete={() => deleteCardMut.mutate()} />
+      <div className="flex items-start justify-between gap-2">
+        <EditableTitle
+          value={card.title}
+          onSave={(t) => renameCardMut.mutate(t)}
+          editing={editing}
+          setEditing={setEditing}
+          className="min-w-0 flex-1 text-text"
+        />
+        {card.createdBy && (
+          <p className="mt-1.5 text-xs text-text-faint">{card.createdBy.name}</p>
+        )}
+        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <ItemMenu onRename={() => setEditing(true)} onDelete={() => deleteCardMut.mutate()} />
+        </div>
       </div>
+
     </div>
   )
 }
@@ -461,6 +467,7 @@ function AddCard({ listId, boardId }: { listId: string; boardId: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["board", boardId] })
       setTitle("")
+      setEditing(false)
     },
   })
 
