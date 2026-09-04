@@ -11,16 +11,16 @@ import {
   deleteCard,
   renameList,
   deleteList,
-  renameBoard,
-  deleteBoard,
 } from "./boardApi"
 import Loader, { InlineLoader } from "../../shared/components/Loader"
 import ItemMenu from "../../shared/components/ItemMenu"
+import MembersPanel from "./MembersPanel"
+import { Users } from "lucide-react"
 
 function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const [showMembers, setShowMembers] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["board", boardId],
@@ -28,20 +28,7 @@ function BoardPage() {
     enabled: !!boardId,
   })
 
-  const [editingTitle, setEditingTitle] = useState(false)
 
-  const renameBoardMut = useMutation({
-    mutationFn: (title: string) => renameBoard(boardId!, title),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board", boardId] }),
-  })
-
-  const deleteBoardMut = useMutation({
-    mutationFn: () => deleteBoard(boardId!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["boards"] })
-      navigate("/")
-    },
-  })
 
   if (isLoading) {
     return <Loader label="Loading board" />
@@ -72,26 +59,27 @@ function BoardPage() {
 
   return (
     <div className="min-h-screen w-full">
-      <div className="flex items-center justify-between px-8 pt-8">
-        <div className="flex gap-5">
+      <div className="flex items-center justify-between gap-3 px-4 pt-6 md:px-8 md:pt-8">
+        <div className="flex min-w-0 items-center gap-3 md:gap-5">
           <button
             onClick={() => navigate("/")}
-            className="text-sm text-text-muted transition-colors hover:text-text"
+            className="shrink-0 text-sm text-text-muted transition-colors hover:text-text"
           >
-            ↩ Back
+            ←
           </button>
-          <EditableTitle
-            value={board.title}
-            onSave={(t) => renameBoardMut.mutate(t)}
-            editing={editingTitle}
-            setEditing={setEditingTitle}
-            className="display text-3xl text-text"
-          />
+          <span className="display truncate text-2xl text-text md:text-3xl">
+            {board.title}
+          </span>
         </div>
-        <ItemMenu
-          onRename={() => setEditingTitle(true)}
-          onDelete={() => deleteBoardMut.mutate()}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => setShowMembers(true)}
+            className="flex items-center gap-2 rounded-lg border border-border px-2 py-1.5 text-sm text-text-muted transition-colors hover:border-border-strong hover:text-text md:px-3"
+          >
+            <Users size={16} />
+            <span className="hidden md:inline">Members</span>
+          </button>
+        </div>
       </div>
 
       <main className="px-8 pb-8 pt-6">
@@ -107,6 +95,7 @@ function BoardPage() {
           <AddList boardId={boardId!} />
         </div>
       </main>
+      {showMembers && <MembersPanel boardId={boardId!} onClose={() => setShowMembers(false)} />}
     </div>
   )
 }

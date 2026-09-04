@@ -28,8 +28,22 @@ export const renameList = (listId: string, title: string) =>
 export const deleteList = (listId: string) =>
   apiRequest<{ id: string }>(`/lists/${listId}`, { method: "DELETE" })
 
-export const renameBoard = (boardId: string, title: string) =>
-  apiRequest<{ board: { id: string; title: string } }>(`/boards/${boardId}`, { method: "PATCH", body: { title } })
 
-export const deleteBoard = (boardId: string) =>
-  apiRequest<{ id: string }>(`/boards/${boardId}`, { method: "DELETE" })
+export interface BoardMember {
+  id: string
+  name: string
+  email: string
+  role: "OWNER" | "MEMBER"
+}
+
+export const getMembers = (boardId: string) =>
+  apiRequest<{ members: BoardMember[] }>(`/boards/${boardId}/members`)
+
+export const inviteMember = (boardId: string, email: string) =>
+  apiRequest<{ member: BoardMember }>(`/boards/${boardId}/members`, {
+    method: "POST",
+    body: { email },
+  })
+
+export const removeMember = (boardId: string, userId: string) =>
+  apiRequest<{ id: string }>(`/boards/${boardId}/members/${userId}`, { method: "DELETE" })

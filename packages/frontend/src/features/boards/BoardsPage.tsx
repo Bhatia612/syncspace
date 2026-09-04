@@ -1,8 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion } from "framer-motion"
-import { getBoards, createBoard, type BoardSummary } from "./boardsApi"
+import { getBoards, createBoard, renameBoard, deleteBoard, type BoardSummary } from "./boardsApi"
+import ItemMenu from "../../shared/components/ItemMenu"
 
 function BoardsPage() {
   const navigate = useNavigate()
@@ -40,20 +41,73 @@ function BoardsPage() {
 }
 
 function BoardCard({ board, onOpen }: { board: BoardSummary; onOpen: () => void }) {
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["boards"] })
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(board.title)
+
+  useEffect(() => {
+    if (editing) setDraft(board.title)
+  }, [editing, board.title])
+
+  const renameMut = useMutation({
+    mutationFn: (title: string) => renameBoard(board.id, title),
+    onSuccess: invalidate,
+  })
+  const deleteMut = useMutation({
+    mutationFn: () => deleteBoard(board.id),
+    onSuccess: invalidate,
+  })
+
+  const saveRename = () => {
+    const t = draft.trim()
+    if (t && t !== board.title) renameMut.mutate(t)
+    setEditing(false)
+  }
+
   return (
-    <motion.button
-      onClick={onOpen}
+    <motion.div
       whileHover={{ y: -3 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="flex h-32 flex-col justify-between rounded-xl border border-border bg-surface-1 p-5 text-left transition-colors hover:border-border-strong"
+      className="flex h-32 flex-col justify-between rounded-xl border border-border bg-surface-1 p-5 transition-colors hover:border-border-strong"
     >
-      <span className="display text-xl text-text">{board.title}</span>
-      <span className="text-xs text-text-faint">
+      <div className="flex items-start justify-between gap-2">
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={saveRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveRename()
+              if (e.key === "Escape") setEditing(false)
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full rounded border border-accent bg-surface-2 px-1 text-xl text-text outline-none"
+          />
+        ) : (
+          <button
+            onClick={onOpen}
+            className="display min-w-0 flex-1 truncate text-left text-xl text-text"
+          >
+            {board.title}
+          </button>
+        )}
+        <div onClick={(e) => e.stopPropagation()}>
+          <ItemMenu
+            onRename={() => setEditing(true)}
+            onDelete={() => deleteMut.mutate()}
+          />
+        </div>
+      </div>
+
+      <button onClick={onOpen} className="text-left text-xs text-text-faint">
         {board.memberCount} {board.memberCount === 1 ? "member" : "members"} · {board.role.toLowerCase()}
-      </span>
-    </motion.button>
+      </button>
+    </motion.div>
   )
 }
+
 
 function NewBoardCard() {
   const navigate = useNavigate()

@@ -15,3 +15,9 @@ export const createBoard = (title: string) =>
     method: "POST",
     body: { title },
   })
+
+export const renameBoard = (boardId: string, title: string) =>
+  apiRequest<{ board: { id: string; title: string } }>(`/boards/${boardId}`, { method: "PATCH", body: { title } })
+
+export const deleteBoard = (boardId: string) =>
+  apiRequest<{ id: string }>(`/boards/${boardId}`, { method: "DELETE" })
