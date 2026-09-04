@@ -64,6 +64,13 @@ export const getBoardSnapshot = async (
     const cards = await prisma.card.findMany({
         where: { list: { boardId } },
         orderBy: { position: "asc" },
+        select: {
+            id: true,
+            listId: true,
+            title: true,
+            position: true,
+            createdBy: { select: { id: true, name: true } },
+        },
     })
 
     return {
@@ -80,6 +87,7 @@ export const getBoardSnapshot = async (
             listId: c.listId,
             title: c.title,
             position: c.position,
+            createdBy: c.createdBy,
         })),
     }
 }

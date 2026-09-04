@@ -35,8 +35,14 @@ export const createCard = async ({ listId, userId, title }: CreateCardInput) => 
   const position = positionAfter(lastCard?.position ?? null)
 
   const card = await prisma.card.create({
-    data: { listId, title: capitalizeFirst(title), position },
-    select: { id: true, listId: true, title: true, position: true },
+    data: { listId, title: capitalizeFirst(title), position, createdById: userId },
+    select: {
+      id: true,
+      listId: true,
+      title: true,
+      position: true,
+      createdBy: { select: { id: true, name: true } },
+    },
   })
   return { ...card, boardId: list.boardId }
 
@@ -82,7 +88,13 @@ export const moveCard = async ({ cardId, toListId, position, userId }: MoveCardI
   const updated = await prisma.card.update({
     where: { id: cardId },
     data: { listId: toListId, position },
-    select: { id: true, listId: true, title: true, position: true },
+    select: {
+      id: true,
+      listId: true,
+      title: true,
+      position: true,
+      createdBy: { select: { id: true, name: true } },
+    },
   })
 
   return { ...updated, boardId: card.list.boardId }
@@ -110,7 +122,13 @@ export const renameCard = async ({ cardId, userId, title }: RenameCardInput) => 
   const updated = await prisma.card.update({
     where: { id: cardId },
     data: { title: capitalizeFirst(title) },
-    select: { id: true, listId: true, title: true, position: true },
+    select: {
+      id: true,
+      listId: true,
+      title: true,
+      position: true,
+      createdBy: { select: { id: true, name: true } },
+    },
   })
   return { ...updated, boardId: card.list.boardId }
 }
@@ -128,7 +146,7 @@ export const deleteCard = async ({ cardId, userId }: DeleteCardInput) => {
   if (!card) throw new AppError("Card not found", 404, "CARD_NOT_FOUND")
 
   await assertBoardMember(card.list.boardId, userId)
-  
+
   await prisma.card.delete({ where: { id: cardId } })
   return { id: cardId, boardId: card.list.boardId }
 }
