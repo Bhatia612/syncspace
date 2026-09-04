@@ -75,5 +75,5 @@ export const deleteList = async ({ listId, userId }: DeleteListInput) => {
 
   // Cards cascade-delete via the schema's onDelete: Cascade.
   await prisma.list.delete({ where: { id: listId } })
-  return { id: listId }
+  return { id: listId, boardId: list.boardId }
 }

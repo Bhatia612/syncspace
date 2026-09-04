@@ -1,3 +1,5 @@
+import type { Card, List } from "./board"
+
 
 export interface CardMoveCommand {
   cardId: string
@@ -48,15 +50,44 @@ export interface ClientToServerEvents {
 
 export interface ServerToClientEvents {
   "card:moved": (evt: CardMovedEvent) => void
+  "card:created": (evt: CardCreatedEvent) => void
+  "card:renamed": (evt: CardRenamedEvent) => void
+  "card:deleted": (evt: CardDeletedEvent) => void
+  "list:created": (evt: ListCreatedEvent) => void
+  "list:renamed": (evt: ListRenamedEvent) => void
+  "list:deleted": (evt: ListDeletedEvent) => void
   "presence:update": (users: PresenceUser[]) => void
   "card:editing": (evt: CardEditingEvent) => void
 }
 
 
-
-
-
-
 export interface SocketData {
   userId: string
+}
+
+
+export interface CardCreatedEvent {
+  card: Card
+}
+
+export interface CardRenamedEvent {
+  cardId: string
+  title: string
+}
+
+export interface CardDeletedEvent {
+  cardId: string
+}
+
+export interface ListCreatedEvent {
+  list: List
+}
+
+export interface ListRenamedEvent {
+  listId: string
+  title: string
+}
+
+export interface ListDeletedEvent {
+  listId: string
 }

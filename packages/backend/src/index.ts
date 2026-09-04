@@ -9,6 +9,7 @@ import boardRouter from "./routes/board.routes"
 import listRouter from "./routes/list.routes"
 import cardRouter from "./routes/card.routes"
 import { registerBoardHandlers } from "./socket/board.handlers"
+import { setIo } from "./socket/io"
 
 import type {
     ClientToServerEvents,
@@ -32,6 +33,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string,
         credentials: true,
     },
 })
+setIo(io)
 
 app.use(express.json())
 app.use(cookieParser())

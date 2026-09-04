@@ -1,8 +1,36 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { motion } from "framer-motion"
-import type { Card, List } from "@syncspace/shared"
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import type {
+  Card,
+  List,
+  BoardSnapshot,
+  CardMovedEvent,
+  CardCreatedEvent,
+  CardRenamedEvent,
+  CardDeletedEvent,
+  ListCreatedEvent,
+  ListRenamedEvent,
+  ListDeletedEvent,
+  CommandAck,
+} from "@syncspace/shared"
 import {
   getBoardSnapshot,
   createList,
@@ -12,6 +40,9 @@ import {
   renameList,
   deleteList,
 } from "./boardApi"
+import { positionForDrop } from "./position"
+import { getSocket } from "../../socket/socket"
+import { useBoardSocket } from "./useBoardSocket"
 import Loader, { InlineLoader } from "../../shared/components/Loader"
 import ItemMenu from "../../shared/components/ItemMenu"
 import MembersPanel from "./MembersPanel"
@@ -28,13 +59,70 @@ function BoardPage() {
     enabled: !!boardId,
   })
 
+  const [board, setBoard] = useState<BoardSnapshot | null>(null)
+  const [activeCard, setActiveCard] = useState<Card | null>(null)
 
+  const handlers = useMemo(
+    () => ({
+      onCardMoved: (evt: CardMovedEvent) => {
+        setBoard((prev) => prev && {
+          ...prev,
+          cards: prev.cards.map((c) => c.id === evt.cardId ? { ...c, listId: evt.toListId, position: evt.position } : c),
+        })
+      },
+      onCardCreated: (evt: CardCreatedEvent) => {
+        setBoard((prev) => {
+          if (!prev) return prev
+          if (prev.cards.some((c) => c.id === evt.card.id)) return prev
+          return { ...prev, cards: [...prev.cards, evt.card] }
+        })
+      },
+      onCardRenamed: (evt: CardRenamedEvent) => {
+        setBoard((prev) => prev && {
+          ...prev,
+          cards: prev.cards.map((c) => c.id === evt.cardId ? { ...c, title: evt.title } : c),
+        })
+      },
+      onCardDeleted: (evt: CardDeletedEvent) => {
+        setBoard((prev) => prev && { ...prev, cards: prev.cards.filter((c) => c.id !== evt.cardId) })
+      },
+      onListCreated: (evt: ListCreatedEvent) => {
+        setBoard((prev) => {
+          if (!prev) return prev
+          if (prev.lists.some((l) => l.id === evt.list.id)) return prev
+          return { ...prev, lists: [...prev.lists, evt.list] }
+        })
+      },
+      onListRenamed: (evt: ListRenamedEvent) => {
+        setBoard((prev) => prev && {
+          ...prev,
+          lists: prev.lists.map((l) => l.id === evt.listId ? { ...l, title: evt.title } : l),
+        })
+      },
+      onListDeleted: (evt: ListDeletedEvent) => {
+        setBoard((prev) => prev && {
+          ...prev,
+          lists: prev.lists.filter((l) => l.id !== evt.listId),
+          cards: prev.cards.filter((c) => c.listId !== evt.listId),
+        })
+      },
+    }),
+    []
+  )
 
-  if (isLoading) {
-    return <Loader label="Loading board" />
-  }
+  useBoardSocket(boardId, handlers)
 
-  if (isError || !data) {
+  useEffect(() => {
+    if (data?.board) setBoard(data.board)
+  }, [data])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  )
+
+  if (isLoading) return <Loader label="Loading board" />
+
+  if (isError || !board) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas">
         <p className="text-text-muted">Couldn't load this board.</p>
@@ -48,14 +136,107 @@ function BoardPage() {
     )
   }
 
-  const board = data.board
-
   const cardsByList = (listId: string): Card[] =>
     board.cards
       .filter((c) => c.listId === listId)
       .sort((a, b) => (a.position < b.position ? -1 : 1))
 
   const lists = [...board.lists].sort((a, b) => (a.position < b.position ? -1 : 1))
+
+  const findCard = (id: string) => board.cards.find((c) => c.id === id)
+
+  const listIdOfCard = (cardId: string): string | null =>
+    findCard(cardId)?.listId ?? null
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveCard(findCard(event.active.id as string) ?? null)
+  }
+
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    const activeListId = listIdOfCard(activeId)
+    const overListId = listIdOfCard(overId) ?? (overId.startsWith("list:") ? overId.slice(5) : null)
+
+    if (!activeListId || !overListId || activeListId === overListId) return
+
+    setBoard((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        cards: prev.cards.map((c) =>
+          c.id === activeId ? { ...c, listId: overListId } : c
+        ),
+      }
+    })
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveCard(null)
+    const { active, over } = event
+    if (!over || !board) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    const targetListId =
+      listIdOfCard(overId) ?? (overId.startsWith("list:") ? overId.slice(5) : null)
+    if (!targetListId) return
+
+    const cardsInTarget = board.cards
+      .filter((c) => c.listId === targetListId && c.id !== activeId)
+      .sort((a, b) => (a.position < b.position ? -1 : 1))
+
+    // Index where the card was dropped.
+    let dropIndex = cardsInTarget.findIndex((c) => c.id === overId)
+    if (dropIndex === -1) dropIndex = cardsInTarget.length
+
+    const orderedPositions = cardsInTarget.map((c) => c.position)
+    const newPosition = positionForDrop(orderedPositions, dropIndex)
+
+    // Snapshot the card's previous state for rollback.
+    const before = board.cards.find((c) => c.id === activeId)
+    const prevListId = before?.listId
+    const prevPosition = before?.position
+
+    setBoard((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        cards: prev.cards.map((c) =>
+          c.id === activeId ? { ...c, listId: targetListId, position: newPosition } : c
+        ),
+      }
+    })
+
+    const socket = getSocket()
+    socket.emit(
+      "card:move",
+      { cardId: activeId, toListId: targetListId, position: newPosition },
+      (ack: CommandAck) => {
+        if (!ack.ok) {
+          // Server rejected the move: roll back to where it was.
+          setBoard((prev) => {
+            if (!prev || prevListId === undefined || prevPosition === undefined) return prev
+            return {
+              ...prev,
+              cards: prev.cards.map((c) =>
+                c.id === activeId
+                  ? { ...c, listId: prevListId, position: prevPosition }
+                  : c
+              ),
+            }
+          })
+          console.warn("Move rejected:", ack.reason)
+        }
+      }
+    )
+  }
 
   return (
     <div className="min-h-screen w-full">
@@ -67,9 +248,7 @@ function BoardPage() {
           >
             ←
           </button>
-          <span className="display truncate text-2xl text-text md:text-3xl">
-            {board.title}
-          </span>
+          <span className="display truncate text-2xl text-text md:text-3xl">{board.title}</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -82,19 +261,36 @@ function BoardPage() {
         </div>
       </div>
 
-      <main className="px-8 pb-8 pt-6">
-        <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start">
-          {lists.map((list) => (
-            <BoardList
-              key={list.id}
-              list={list}
-              cards={cardsByList(list.id)}
-              boardId={boardId!}
-            />
-          ))}
-          <AddList boardId={boardId!} />
-        </div>
-      </main>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <main className="px-8 pb-8 pt-6">
+          <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-start">
+            {lists.map((list) => (
+              <BoardList
+                key={list.id}
+                list={list}
+                cards={cardsByList(list.id)}
+                boardId={boardId!}
+              />
+            ))}
+            <AddList boardId={boardId!} />
+          </div>
+        </main>
+
+        <DragOverlay>
+          {activeCard ? (
+            <div className="rounded-lg border border-accent bg-surface-2 px-3 py-2.5 text-sm text-text shadow-[var(--shadow-lifted)]">
+              {activeCard.title}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
       {showMembers && <MembersPanel boardId={boardId!} onClose={() => setShowMembers(false)} />}
     </div>
   )
@@ -138,6 +334,7 @@ function EditableTitle({
           }
           if (e.key === "Escape") setEditing(false)
         }}
+        onClick={(e) => e.stopPropagation()}
         className={`rounded border border-accent bg-surface-2 px-1 outline-none ${className}`}
       />
     )
@@ -158,6 +355,8 @@ function BoardList({ list, cards, boardId }: { list: List; cards: Card[]; boardI
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["board", boardId] })
   const [editing, setEditing] = useState(false)
+
+  const { setNodeRef } = useSortable({ id: `list:${list.id}` })
 
   const renameListMut = useMutation({
     mutationFn: (title: string) => renameList(list.id, title),
@@ -183,11 +382,19 @@ function BoardList({ list, cards, boardId }: { list: List; cards: Card[]; boardI
           <ItemMenu onRename={() => setEditing(true)} onDelete={() => deleteListMut.mutate()} />
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        {cards.map((card) => (
-          <BoardCard key={card.id} card={card} boardId={boardId} />
-        ))}
-      </div>
+
+      <SortableContext
+        id={`list:${list.id}`}
+        items={cards.map((c) => c.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div ref={setNodeRef} className="flex min-h-[8px] flex-col gap-2">
+          {cards.map((card) => (
+            <BoardCard key={card.id} card={card} boardId={boardId} />
+          ))}
+        </div>
+      </SortableContext>
+
       <AddCard listId={list.id} boardId={boardId} />
     </div>
   )
@@ -197,6 +404,21 @@ function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["board", boardId] })
   const [editing, setEditing] = useState(false)
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
 
   const renameCardMut = useMutation({
     mutationFn: (title: string) => renameCard(card.id, title),
@@ -208,9 +430,11 @@ function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
   })
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
     >
       <EditableTitle
@@ -220,8 +444,10 @@ function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
         setEditing={setEditing}
         className="text-text"
       />
-      <ItemMenu onRename={() => setEditing(true)} onDelete={() => deleteCardMut.mutate()} />
-    </motion.div>
+      <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+        <ItemMenu onRename={() => setEditing(true)} onDelete={() => deleteCardMut.mutate()} />
+      </div>
+    </div>
   )
 }
 

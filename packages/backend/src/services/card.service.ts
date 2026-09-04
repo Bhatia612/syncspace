@@ -38,8 +38,8 @@ export const createCard = async ({ listId, userId, title }: CreateCardInput) => 
     data: { listId, title: capitalizeFirst(title), position },
     select: { id: true, listId: true, title: true, position: true },
   })
+  return { ...card, boardId: list.boardId }
 
-  return card
 }
 
 
@@ -107,11 +107,12 @@ export const renameCard = async ({ cardId, userId, title }: RenameCardInput) => 
 
   await assertBoardMember(card.list.boardId, userId)
 
-  return prisma.card.update({
+  const updated = await prisma.card.update({
     where: { id: cardId },
     data: { title: capitalizeFirst(title) },
     select: { id: true, listId: true, title: true, position: true },
   })
+  return { ...updated, boardId: card.list.boardId }
 }
 
 interface DeleteCardInput {
@@ -127,7 +128,7 @@ export const deleteCard = async ({ cardId, userId }: DeleteCardInput) => {
   if (!card) throw new AppError("Card not found", 404, "CARD_NOT_FOUND")
 
   await assertBoardMember(card.list.boardId, userId)
-
+  
   await prisma.card.delete({ where: { id: cardId } })
-  return { id: cardId }
+  return { id: cardId, boardId: card.list.boardId }
 }
