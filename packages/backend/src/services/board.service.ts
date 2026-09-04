@@ -144,3 +144,83 @@ export const deleteBoard = async ({ boardId, userId }: DeleteBoardInput) => {
     await prisma.board.delete({ where: { id: boardId } })
     return { id: boardId }
 }
+
+
+interface InviteMemberInput {
+    boardId: string
+    ownerId: string
+    email: string
+}
+
+export const inviteMember = async ({ boardId, ownerId, email }: InviteMemberInput) => {
+    const ownerMembership = await assertBoardMember(boardId, ownerId)
+    if (ownerMembership.role !== "OWNER") {
+        throw new AppError("Only the board owner can invite members", 403, "NOT_BOARD_OWNER")
+    }
+
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail) {
+        throw new AppError("Email is required", 400, "VALIDATION_ERROR")
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email: trimmedEmail },
+        select: { id: true, name: true, email: true },
+    })
+    if (!user) {
+        throw new AppError("No user found with that email", 404, "USER_NOT_FOUND")
+    }
+
+    const existing = await prisma.boardMember.findUnique({
+        where: { boardId_userId: { boardId, userId: user.id } },
+    })
+    if (existing) {
+        throw new AppError("That person is already a member", 409, "ALREADY_MEMBER")
+    }
+
+    await prisma.boardMember.create({
+        data: { boardId, userId: user.id, role: "MEMBER" },
+    })
+
+    return { id: user.id, name: user.name, email: user.email, role: "MEMBER" as const }
+}
+
+export const getBoardMembers = async (boardId: string, userId: string) => {
+    await assertBoardMember(boardId, userId)
+
+    const members = await prisma.boardMember.findMany({
+        where: { boardId },
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { role: "asc" },
+    })
+
+    return members.map((m) => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        role: m.role,
+    }))
+}
+
+interface RemoveMemberInput {
+    boardId: string
+    ownerId: string
+    memberUserId: string
+}
+
+export const removeMember = async ({ boardId, ownerId, memberUserId }: RemoveMemberInput) => {
+    const ownerMembership = await assertBoardMember(boardId, ownerId)
+    if (ownerMembership.role !== "OWNER") {
+        throw new AppError("Only the board owner can remove members", 403, "NOT_BOARD_OWNER")
+    }
+
+    if (memberUserId === ownerId) {
+        throw new AppError("The owner cannot be removed", 400, "CANNOT_REMOVE_OWNER")
+    }
+
+    await prisma.boardMember.delete({
+        where: { boardId_userId: { boardId, userId: memberUserId } },
+    })
+
+    return { id: memberUserId }
+}

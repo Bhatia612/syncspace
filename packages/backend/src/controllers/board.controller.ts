@@ -49,3 +49,32 @@ export const deleteBoard = async (req: Request<{ id: string }>, res: Response, n
     res.json(result)
   } catch (err) { next(err) }
 }
+
+export const inviteMember = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const member = await boardService.inviteMember({
+      boardId: req.params.id,
+      ownerId: req.userId!,
+      email: req.body.email,
+    })
+    res.status(201).json({ member })
+  } catch (err) { next(err) }
+}
+
+export const getBoardMembers = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const members = await boardService.getBoardMembers(req.params.id, req.userId!)
+    res.json({ members })
+  } catch (err) { next(err) }
+}
+
+export const removeMember = async (req: Request<{ id: string; userId: string }>, res: Response, next: NextFunction) => {
+  try {
+    const result = await boardService.removeMember({
+      boardId: req.params.id,
+      ownerId: req.userId!,
+      memberUserId: req.params.userId,
+    })
+    res.json(result)
+  } catch (err) { next(err) }
+}
