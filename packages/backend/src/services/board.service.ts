@@ -107,3 +107,39 @@ export const getUserBoards = async (userId: string) => {
         createdAt: m.board.createdAt,
     }))
 }
+
+interface RenameBoardInput {
+    boardId: string
+    userId: string
+    title: string
+}
+
+export const renameBoard = async ({ boardId, userId, title }: RenameBoardInput) => {
+    if (!title || !title.trim()) {
+        throw new AppError("Board title is required", 400, "VALIDATION_ERROR")
+    }
+
+    await assertBoardMember(boardId, userId)
+
+    return prisma.board.update({
+        where: { id: boardId },
+        data: { title: title.trim() },
+        select: { id: true, title: true },
+    })
+}
+
+interface DeleteBoardInput {
+    boardId: string
+    userId: string
+}
+
+export const deleteBoard = async ({ boardId, userId }: DeleteBoardInput) => {
+    const membership = await assertBoardMember(boardId, userId)
+
+    if (membership.role !== "OWNER") {
+        throw new AppError("Only the board owner can delete it", 403, "NOT_BOARD_OWNER")
+    }
+
+    await prisma.board.delete({ where: { id: boardId } })
+    return { id: boardId }
+}

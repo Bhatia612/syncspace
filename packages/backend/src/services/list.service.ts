@@ -31,3 +31,48 @@ export const createList = async ({ boardId, userId, title }: CreateListInput) =>
 
   return list
 }
+
+interface RenameListInput {
+  listId: string
+  userId: string
+  title: string
+}
+
+export const renameList = async ({ listId, userId, title }: RenameListInput) => {
+  if (!title || !title.trim()) {
+    throw new AppError("List title is required", 400, "VALIDATION_ERROR")
+  }
+
+  const list = await prisma.list.findUnique({
+    where: { id: listId },
+    select: { boardId: true },
+  })
+  if (!list) throw new AppError("List not found", 404, "LIST_NOT_FOUND")
+
+  await assertBoardMember(list.boardId, userId)
+
+  return prisma.list.update({
+    where: { id: listId },
+    data: { title: title.trim() },
+    select: { id: true, boardId: true, title: true, position: true },
+  })
+}
+
+interface DeleteListInput {
+  listId: string
+  userId: string
+}
+
+export const deleteList = async ({ listId, userId }: DeleteListInput) => {
+  const list = await prisma.list.findUnique({
+    where: { id: listId },
+    select: { boardId: true },
+  })
+  if (!list) throw new AppError("List not found", 404, "LIST_NOT_FOUND")
+
+  await assertBoardMember(list.boardId, userId)
+
+  // Cards cascade-delete via the schema's onDelete: Cascade.
+  await prisma.list.delete({ where: { id: listId } })
+  return { id: listId }
+}

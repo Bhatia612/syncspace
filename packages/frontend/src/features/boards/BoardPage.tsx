@@ -3,16 +3,40 @@ import { useParams, useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion } from "framer-motion"
 import type { Card, List } from "@syncspace/shared"
-import { getBoardSnapshot, createList, createCard } from "./boardApi"
+import {
+  getBoardSnapshot,
+  createList,
+  createCard,
+  renameCard,
+  deleteCard,
+  renameList,
+  deleteList,
+  renameBoard,
+  deleteBoard,
+} from "./boardApi"
 
 function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["board", boardId],
     queryFn: () => getBoardSnapshot(boardId!),
     enabled: !!boardId,
+  })
+
+  const renameBoardMut = useMutation({
+    mutationFn: (title: string) => renameBoard(boardId!, title),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board", boardId] }),
+  })
+
+  const deleteBoardMut = useMutation({
+    mutationFn: () => deleteBoard(boardId!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] })
+      navigate("/")
+    },
   })
 
   if (isLoading) {
@@ -56,7 +80,17 @@ function BoardPage() {
           >
             ← Boards
           </button>
-          <span className="display text-2xl text-text">{board.title}</span>
+          <EditableTitle
+            value={board.title}
+            onSave={(t) => renameBoardMut.mutate(t)}
+            className="display text-2xl text-text"
+          />
+          <button
+            onClick={() => deleteBoardMut.mutate()}
+            className="ml-auto text-sm text-text-faint transition-colors hover:text-danger"
+          >
+            Delete board
+          </button>
         </div>
       </header>
 
@@ -77,6 +111,60 @@ function BoardPage() {
   )
 }
 
+// Double-click to rename, Enter to save, Escape to cancel.
+function EditableTitle({
+  value,
+  onSave,
+  className = "",
+}: {
+  value: string
+  onSave: (title: string) => void
+  className?: string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const t = draft.trim()
+          if (t && t !== value) onSave(t)
+          setEditing(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const t = draft.trim()
+            if (t && t !== value) onSave(t)
+            setEditing(false)
+          }
+          if (e.key === "Escape") {
+            setDraft(value)
+            setEditing(false)
+          }
+        }}
+        className={`rounded border border-accent bg-surface-2 px-1 outline-none ${className}`}
+      />
+    )
+  }
+
+  return (
+    <span
+      onDoubleClick={() => {
+        setDraft(value)
+        setEditing(true)
+      }}
+      className={`cursor-text select-none ${className}`}
+      title="Double-click to rename"
+    >
+      {value}
+    </span>
+  )
+}
+
 function BoardList({
   list,
   cards,
@@ -86,15 +174,40 @@ function BoardList({
   cards: Card[]
   boardId: string
 }) {
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["board", boardId] })
+
+  const renameListMut = useMutation({
+    mutationFn: (title: string) => renameList(list.id, title),
+    onSuccess: invalidate,
+  })
+  const deleteListMut = useMutation({
+    mutationFn: () => deleteList(list.id),
+    onSuccess: invalidate,
+  })
+
   return (
-    <div className="w-72 shrink-0 rounded-xl border border-border bg-surface-1 p-3">
+    <div className="group/list w-72 shrink-0 rounded-xl border border-border bg-surface-1 p-3">
       <div className="mb-3 flex items-center justify-between px-1">
-        <span className="select-none font-medium text-text">{list.title}</span>
-        <span className="text-xs text-text-faint">{cards.length}</span>
+        <EditableTitle
+          value={list.title}
+          onSave={(t) => renameListMut.mutate(t)}
+          className="font-medium text-text"
+        />
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-faint">{cards.length}</span>
+          <button
+            onClick={() => deleteListMut.mutate()}
+            className="text-text-faint opacity-0 transition group-hover/list:opacity-100 hover:text-danger"
+            title="Delete list"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         {cards.map((card) => (
-          <BoardCard key={card.id} card={card} />
+          <BoardCard key={card.id} card={card} boardId={boardId} />
         ))}
       </div>
       <AddCard listId={list.id} boardId={boardId} />
@@ -102,14 +215,37 @@ function BoardList({
   )
 }
 
-function BoardCard({ card }: { card: Card }) {
+function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
+  const queryClient = useQueryClient()
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["board", boardId] })
+
+  const renameCardMut = useMutation({
+    mutationFn: (title: string) => renameCard(card.id, title),
+    onSuccess: invalidate,
+  })
+  const deleteCardMut = useMutation({
+    mutationFn: () => deleteCard(card.id),
+    onSuccess: invalidate,
+  })
+
   return (
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="select-none rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
+      className="group/card flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
     >
-      {card.title}
+      <EditableTitle
+        value={card.title}
+        onSave={(t) => renameCardMut.mutate(t)}
+        className="text-text"
+      />
+      <button
+        onClick={() => deleteCardMut.mutate()}
+        className="ml-2 text-text-faint opacity-0 transition group-hover/card:opacity-100 hover:text-danger"
+        title="Delete card"
+      >
+        ✕
+      </button>
     </motion.div>
   )
 }
@@ -124,7 +260,6 @@ function AddCard({ listId, boardId }: { listId: string; boardId: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["board", boardId] })
       setTitle("")
-      // keep the input open so you can add several in a row
     },
   })
 

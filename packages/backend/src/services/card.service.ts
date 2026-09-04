@@ -86,3 +86,47 @@ export const moveCard = async ({ cardId, toListId, position, userId }: MoveCardI
 
   return { ...updated, boardId: card.list.boardId }
 }
+
+interface RenameCardInput {
+  cardId: string
+  userId: string
+  title: string
+}
+
+export const renameCard = async ({ cardId, userId, title }: RenameCardInput) => {
+  if (!title || !title.trim()) {
+    throw new AppError("Card title is required", 400, "VALIDATION_ERROR")
+  }
+
+  const card = await prisma.card.findUnique({
+    where: { id: cardId },
+    include: { list: { select: { boardId: true } } },
+  })
+  if (!card) throw new AppError("Card not found", 404, "CARD_NOT_FOUND")
+
+  await assertBoardMember(card.list.boardId, userId)
+
+  return prisma.card.update({
+    where: { id: cardId },
+    data: { title: title.trim() },
+    select: { id: true, listId: true, title: true, position: true },
+  })
+}
+
+interface DeleteCardInput {
+  cardId: string
+  userId: string
+}
+
+export const deleteCard = async ({ cardId, userId }: DeleteCardInput) => {
+  const card = await prisma.card.findUnique({
+    where: { id: cardId },
+    include: { list: { select: { boardId: true } } },
+  })
+  if (!card) throw new AppError("Card not found", 404, "CARD_NOT_FOUND")
+
+  await assertBoardMember(card.list.boardId, userId)
+
+  await prisma.card.delete({ where: { id: cardId } })
+  return { id: cardId }
+}

@@ -34,3 +34,18 @@ export const getBoards = async (req: Request, res: Response, next: NextFunction)
     next(err)
   }
 }
+
+
+export const renameBoard = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const board = await boardService.renameBoard({ boardId: req.params.id, userId: req.userId!, title: req.body.title })
+    res.json({ board })
+  } catch (err) { next(err) }
+}
+
+export const deleteBoard = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const result = await boardService.deleteBoard({ boardId: req.params.id, userId: req.userId! })
+    res.json(result)
+  } catch (err) { next(err) }
+}

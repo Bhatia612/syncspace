@@ -35,3 +35,17 @@ export const moveCard = async (
     next(err)
   }
 }
+
+export const renameCard = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const card = await cardService.renameCard({ cardId: req.params.id, userId: req.userId!, title: req.body.title })
+    res.json({ card })
+  } catch (err) { next(err) }
+}
+
+export const deleteCard = async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+  try {
+    const result = await cardService.deleteCard({ cardId: req.params.id, userId: req.userId! })
+    res.json(result)
+  } catch (err) { next(err) }
+}
