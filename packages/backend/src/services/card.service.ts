@@ -2,6 +2,7 @@ import prisma from "../config/prisma"
 import AppError from "../utils/AppError"
 import { assertBoardMember } from "./board.service"
 import { positionAfter } from "./position.service"
+import { capitalizeFirst } from "../utils/format"
 
 interface CreateCardInput {
   listId: string
@@ -34,7 +35,7 @@ export const createCard = async ({ listId, userId, title }: CreateCardInput) => 
   const position = positionAfter(lastCard?.position ?? null)
 
   const card = await prisma.card.create({
-    data: { listId, title: title.trim(), position },
+    data: { listId, title: capitalizeFirst(title), position },
     select: { id: true, listId: true, title: true, position: true },
   })
 
@@ -108,7 +109,7 @@ export const renameCard = async ({ cardId, userId, title }: RenameCardInput) => 
 
   return prisma.card.update({
     where: { id: cardId },
-    data: { title: title.trim() },
+    data: { title: capitalizeFirst(title) },
     select: { id: true, listId: true, title: true, position: true },
   })
 }

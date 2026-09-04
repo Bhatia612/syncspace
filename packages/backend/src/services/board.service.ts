@@ -1,6 +1,7 @@
 import prisma from "../config/prisma"
 import AppError from "../utils/AppError"
 import type { BoardSnapshot } from "@syncspace/shared"
+import { capitalizeFirst } from "../utils/format"
 
 interface CreateBoardInput {
     title: string
@@ -14,7 +15,7 @@ export const createBoard = async ({ title, userId }: CreateBoardInput) => {
 
     const board = await prisma.board.create({
         data: {
-            title: title.trim(),
+            title: capitalizeFirst(title),
             ownerId: userId,
             members: {
                 create: {
@@ -123,7 +124,7 @@ export const renameBoard = async ({ boardId, userId, title }: RenameBoardInput) 
 
     return prisma.board.update({
         where: { id: boardId },
-        data: { title: title.trim() },
+        data: { title: capitalizeFirst(title) },
         select: { id: true, title: true },
     })
 }

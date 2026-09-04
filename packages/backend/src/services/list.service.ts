@@ -2,6 +2,7 @@ import prisma from "../config/prisma"
 import AppError from "../utils/AppError"
 import { assertBoardMember } from "./board.service"
 import { positionAfter } from "./position.service"
+import { capitalizeFirst } from "../utils/format"
 
 interface CreateListInput {
   boardId: string
@@ -25,7 +26,7 @@ export const createList = async ({ boardId, userId, title }: CreateListInput) =>
   const position = positionAfter(lastList?.position ?? null)
 
   const list = await prisma.list.create({
-    data: { boardId, title: title.trim(), position },
+    data: { boardId, title: capitalizeFirst(title), position },
     select: { id: true, boardId: true, title: true, position: true },
   })
 
@@ -53,7 +54,7 @@ export const renameList = async ({ listId, userId, title }: RenameListInput) => 
 
   return prisma.list.update({
     where: { id: listId },
-    data: { title: title.trim() },
+    data: { title: capitalizeFirst(title) },
     select: { id: true, boardId: true, title: true, position: true },
   })
 }
