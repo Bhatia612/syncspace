@@ -47,11 +47,14 @@ import Loader, { InlineLoader } from "../../shared/components/Loader"
 import ItemMenu from "../../shared/components/ItemMenu"
 import MembersPanel from "./MembersPanel"
 import { Users } from "lucide-react"
+import type { PresenceUser } from "@syncspace/shared"
+import PresenceDock from "./PresenceDock"
 
 function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const [showMembers, setShowMembers] = useState(false)
+  const [presence, setPresence] = useState<PresenceUser[]>([])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["board", boardId],
@@ -110,6 +113,9 @@ function BoardPage() {
           lists: prev.lists.filter((l) => l.id !== evt.listId),
           cards: prev.cards.filter((c) => c.listId !== evt.listId),
         })
+      },
+      onPresence: (users: PresenceUser[]) => {
+        setPresence(users)
       },
     }),
     []
@@ -295,6 +301,7 @@ function BoardPage() {
           ) : null}
         </DragOverlay>
       </DndContext>
+      <PresenceDock users={presence} />
 
       {showMembers && <MembersPanel boardId={boardId!} onClose={() => setShowMembers(false)} />}
     </div>

@@ -8,6 +8,7 @@ import type {
   ListCreatedEvent,
   ListRenamedEvent,
   ListDeletedEvent,
+  PresenceUser,
 } from "@syncspace/shared"
 
 interface BoardSocketHandlers {
@@ -18,6 +19,7 @@ interface BoardSocketHandlers {
   onListCreated: (evt: ListCreatedEvent) => void
   onListRenamed: (evt: ListRenamedEvent) => void
   onListDeleted: (evt: ListDeletedEvent) => void
+  onPresence: (users: PresenceUser[]) => void
 }
 
 export function useBoardSocket(boardId: string | undefined, handlers: BoardSocketHandlers) {
@@ -36,6 +38,7 @@ export function useBoardSocket(boardId: string | undefined, handlers: BoardSocke
     socket.on("list:created", handlers.onListCreated)
     socket.on("list:renamed", handlers.onListRenamed)
     socket.on("list:deleted", handlers.onListDeleted)
+    socket.on("presence:update", handlers.onPresence)
 
     return () => {
       socket.emit("board:leave", boardId)
@@ -46,6 +49,7 @@ export function useBoardSocket(boardId: string | undefined, handlers: BoardSocke
       socket.off("list:created", handlers.onListCreated)
       socket.off("list:renamed", handlers.onListRenamed)
       socket.off("list:deleted", handlers.onListDeleted)
+      socket.off("presence:update", handlers.onPresence)
     }
   }, [boardId, handlers])
 }
