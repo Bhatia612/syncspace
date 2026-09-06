@@ -69,13 +69,44 @@ a,
 [role="button"],
 label[for] {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M10 8V4.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4a5 5 0 0 1-5 5h-1.5a5 5 0 0 1-4-2l-3-4a1.6 1.6 0 0 1 2.5-2L10 14V8a1.5 1.5 0 0 1 3 0' fill='%23F4F6F8' stroke='%230F1216' stroke-width='1.3' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") 8 2, pointer;
+  user-select: none;
+}
+
+button *,
+a *,
+[role="button"] *,
+label[for] * {
+  cursor: inherit;
+}
+
+
+
+
+[data-draggable-card] {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M9 11V6.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-4-2l-2.5-3.5a1.5 1.5 0 0 1 2.4-1.8L9 13V7' fill='%23F4F6F8' stroke='%230F1216' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 10 4, grab;
+}
+
+[data-draggable-card] * {
+  cursor: inherit;
+}
+
+[data-dragging="true"],
+[data-dragging="true"] * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M8 12V9a1.3 1.3 0 0 1 2.6 0V12m0-1a1.3 1.3 0 0 1 2.6 0V12m0-.5a1.3 1.3 0 0 1 2.6 0v4.5a4.5 4.5 0 0 1-4.5 4.5h-1a4.5 4.5 0 0 1-3.7-2l-1.8-2.6a1.3 1.3 0 0 1 2.1-1.5L8 14' fill='%23F4F6F8' stroke='%230F1216' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 12 6, grabbing !important;
+}
+
+body.is-dragging,
+body.is-dragging * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M8 12V9a1.3 1.3 0 0 1 2.6 0V12m0-1a1.3 1.3 0 0 1 2.6 0V12m0-.5a1.3 1.3 0 0 1 2.6 0v4.5a4.5 4.5 0 0 1-4.5 4.5h-1a4.5 4.5 0 0 1-3.7-2l-1.8-2.6a1.3 1.3 0 0 1 2.1-1.5L8 14' fill='%23F4F6F8' stroke='%230F1216' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") 12 6, grabbing !important;
 }
 
 button:disabled {
   cursor: not-allowed;
 }
 
+
 @media (max-width: 640px) {
+
   input,
   textarea,
   select {

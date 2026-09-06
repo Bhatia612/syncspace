@@ -62,6 +62,11 @@ function BoardPage() {
   const [board, setBoard] = useState<BoardSnapshot | null>(null)
   const [activeCard, setActiveCard] = useState<Card | null>(null)
 
+  useEffect(() => {
+    document.body.classList.toggle("is-dragging", !!activeCard)
+    return () => document.body.classList.remove("is-dragging")
+  }, [activeCard])
+
   const handlers = useMemo(
     () => ({
       onCardMoved: (evt: CardMovedEvent) => {
@@ -435,6 +440,8 @@ function BoardCard({ card, boardId }: { card: Card; boardId: string }) {
       style={style}
       {...attributes}
       {...listeners}
+      data-draggable-card
+      data-dragging={isDragging ? "true" : undefined}
       className="rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text"
     >
       <div className="flex items-start justify-between gap-2">
